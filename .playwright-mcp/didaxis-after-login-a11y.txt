@@ -1,0 +1,11 @@
+- img "Didaxis Studio"
+- paragraph: Sign in to your account
+- text: Email
+- textbox "Email":
+  - /placeholder: you@college.edu
+  - text: admin@didaxis.studio
+- text: Password
+- textbox "Password":
+  - /placeholder: Your password
+  - text: Didaxis2026!
+- button "Sign In" [disabled]

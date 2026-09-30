@@ -6,6 +6,9 @@ import {
   openTodoMVC,
   repeatText,
   todoItem,
+  todoItemDelete,
+  todoItemLabel,
+  todoItemToggle,
   todoItems,
   toggleTodo,
 } from './todomvc.helpers';
@@ -29,9 +32,9 @@ test.describe('Positive flows', () => {
     await addTodo(page, 'Walk the dog');
     await toggleTodo(page, 'Walk the dog');
 
-    const item = todoItem(page, 'Walk the dog');
-    await expect(item).toHaveClass(/completed/);
-    await expect(item).toBeVisible();
+    const toggle = todoItemToggle(page, 'Walk the dog');
+    await expect(toggle).toBeChecked();
+    await expect(todoItem(page, 'Walk the dog')).toBeVisible();
   });
 
   test('TC-003: Todo is removed from the list after delete', async ({ page }) => {
@@ -47,15 +50,16 @@ test.describe('Positive flows', () => {
     await addTodo(page, 'Read Playwright docs');
 
     await expect(todoItems(page)).toHaveCount(3);
-    await expect(todoItems(page)).toHaveText([
+    await expect(todoItems(page).locator('label')).toHaveText([
       'Buy milk',
       'Walk the dog',
       'Read Playwright docs',
     ]);
     for (const label of ['Buy milk', 'Walk the dog', 'Read Playwright docs']) {
+      await expect(todoItemToggle(page, label)).toBeVisible();
       const item = todoItem(page, label);
-      await expect(item.getByRole('checkbox')).toBeVisible();
-      await expect(item.locator('.destroy')).toBeAttached();
+      await item.hover();
+      await expect(todoItemDelete(page, label)).toBeVisible();
     }
   });
 
@@ -64,9 +68,8 @@ test.describe('Positive flows', () => {
     await toggleTodo(page, 'Walk the dog');
     await toggleTodo(page, 'Walk the dog');
 
-    const item = todoItem(page, 'Walk the dog');
-    await expect(item).not.toHaveClass(/completed/);
-    await expect(item).toContainText('Walk the dog');
+    await expect(todoItemToggle(page, 'Walk the dog')).not.toBeChecked();
+    await expect(todoItemLabel(page, 'Walk the dog')).toHaveText('Walk the dog');
   });
 });
 
@@ -94,7 +97,7 @@ test.describe('Negative flows', () => {
     await toggleTodo(page, 'Buy milk');
 
     await expect(todoItem(page, 'Buy milk')).toBeVisible();
-    await expect(todoItem(page, 'Buy milk')).toHaveClass(/completed/);
+    await expect(todoItemToggle(page, 'Buy milk')).toBeChecked();
   });
 
   test('TC-009: Delete removes only the targeted todo', async ({ page }) => {
@@ -109,9 +112,7 @@ test.describe('Negative flows', () => {
   test('TC-010: Adding a todo does not auto-complete it', async ({ page }) => {
     await addTodo(page, 'Schedule dentist appointment');
 
-    const checkbox = todoItem(page, 'Schedule dentist appointment').getByRole('checkbox');
-    await expect(checkbox).not.toBeChecked();
-    await expect(todoItem(page, 'Schedule dentist appointment')).not.toHaveClass(/completed/);
+    await expect(todoItemToggle(page, 'Schedule dentist appointment')).not.toBeChecked();
   });
 });
 
@@ -123,7 +124,7 @@ test.describe('Edge cases', () => {
     await addTodo(page, text);
 
     await expect(todoItem(page, text)).toHaveCount(1);
-    await expect(todoItem(page, text).locator('label')).toHaveText(text);
+    await expect(todoItemLabel(page, text)).toHaveText(text);
   });
 
   test('TC-012: Duplicate todo titles are allowed as separate items', async ({ page }) => {
@@ -132,8 +133,8 @@ test.describe('Edge cases', () => {
 
     await expect(todoItem(page, 'Buy milk')).toHaveCount(2);
     await toggleTodo(page, 'Buy milk', 0);
-    await expect(todoItem(page, 'Buy milk').nth(0)).toHaveClass(/completed/);
-    await expect(todoItem(page, 'Buy milk').nth(1)).not.toHaveClass(/completed/);
+    await expect(todoItemToggle(page, 'Buy milk', 0)).toBeChecked();
+    await expect(todoItemToggle(page, 'Buy milk', 1)).not.toBeChecked();
   });
 
   test('TC-013: Long todo text is accepted and visible', async ({ page }) => {
@@ -141,11 +142,11 @@ test.describe('Edge cases', () => {
     await addTodo(page, longText);
 
     await expect(todoItems(page)).toHaveCount(1);
-    await expect(todoItems(page).first().locator('label')).toHaveText(longText);
-    await todoItems(page).first().getByRole('checkbox').click();
-    await expect(todoItems(page).first()).toHaveClass(/completed/);
-    await todoItems(page).first().hover();
-    await todoItems(page).first().locator('.destroy').click();
+    const firstLabel = todoItems(page).first().locator('label');
+    await expect(firstLabel).toHaveText(longText);
+    await todoItems(page).first().getByRole('checkbox', { name: 'Toggle Todo' }).click();
+    await expect(todoItems(page).first().getByRole('checkbox', { name: 'Toggle Todo' })).toBeChecked();
+    await deleteTodo(page, longText);
     await expect(todoItems(page)).toHaveCount(0);
   });
 
@@ -154,7 +155,7 @@ test.describe('Edge cases', () => {
 
     await expect(todoItem(page, 'A')).toHaveCount(1);
     await toggleTodo(page, 'A');
-    await expect(todoItem(page, 'A')).toHaveClass(/completed/);
+    await expect(todoItemToggle(page, 'A')).toBeChecked();
     await deleteTodo(page, 'A');
     await expect(todoItem(page, 'A')).toHaveCount(0);
   });
@@ -163,7 +164,7 @@ test.describe('Edge cases', () => {
     const text = 'Réunion équipe — préparer café ☕';
     await addTodo(page, text);
 
-    await expect(todoItem(page, text).locator('label')).toHaveText(text);
+    await expect(todoItemLabel(page, text)).toHaveText(text);
     await toggleTodo(page, text);
     await deleteTodo(page, text);
     await expect(todoItem(page, text)).toHaveCount(0);
@@ -178,9 +179,9 @@ test.describe('Edge cases', () => {
     const displayed = (await item.locator('label').textContent()) ?? '';
     expect(displayed === 'Trim me' || displayed === '  Trim me  ').toBeTruthy();
 
-    await item.getByRole('checkbox').click();
+    await item.getByRole('checkbox', { name: 'Toggle Todo' }).click();
     await item.hover();
-    await item.locator('.destroy').click();
+    await item.getByRole('button', { name: 'Delete' }).click();
     await expect(todoItems(page)).toHaveCount(0);
   });
 
@@ -208,7 +209,7 @@ test.describe('Edge cases', () => {
     await deleteTodo(page, 'Task two');
 
     await expect(todoItem(page, 'Task two')).toHaveCount(0);
-    await expect(todoItem(page, 'Task one')).toHaveClass(/completed/);
-    await expect(todoItem(page, 'Task three')).toHaveClass(/completed/);
+    await expect(todoItemToggle(page, 'Task one')).toBeChecked();
+    await expect(todoItemToggle(page, 'Task three')).toBeChecked();
   });
 });
