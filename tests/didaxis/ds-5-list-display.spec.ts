@@ -12,7 +12,6 @@ import {
 } from './programs.helpers';
 
 test.describe('DS-5 Program list filtering and display', () => {
-  test.describe.configure({ mode: 'serial' });
   test.beforeEach(async ({ page }) => {
     test.setTimeout(90_000);
     await loginAsAdmin(page);
@@ -100,7 +99,7 @@ test.describe('DS-5 Program list filtering and display', () => {
 
   test('TC-009: Similar program names are both listed', async ({ page }) => {
     const base = uniqueName('Web Development 2026');
-    const updated = `${base} - Updated`;
+    const updated = uniqueName('Web Development 2026 - Updated');
     await createProgram(page, base, 'Full-stack web development program');
     await createProgram(page, updated, 'Renamed full-stack web development program');
     await gotoProgramsPage(page);

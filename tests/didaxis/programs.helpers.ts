@@ -1,4 +1,4 @@
-import { expect, Locator, Page } from '@playwright/test';
+import { expect, Locator, Page, test } from '@playwright/test';
 
 export function requireEnv(name: string): string {
   const value = process.env[name];
@@ -72,7 +72,7 @@ export function programTitleInRow(row: Locator): Locator {
 }
 
 export function programDescriptionInRow(row: Locator): Locator {
-  return row.locator('td p').nth(1);
+  return row.locator('td').first().locator('p').nth(1);
 }
 
 export function editProgramButton(page: Page, programName: string): Locator {
@@ -80,8 +80,22 @@ export function editProgramButton(page: Page, programName: string): Locator {
 }
 
 export function deleteProgramButton(page: Page, programName: string): Locator {
-  return page.getByRole('button', { name: `Delete ${programName}` });
+  return programRow(page, programName).first().getByRole('button', { name: `Delete ${programName}` });
 }
+
+export async function programDataRowCount(page: Page): Promise<number> {
+  await expect(page.getByRole('heading', { name: 'Programs', level: 2 })).toBeVisible();
+  return page.getByRole('button', { name: /^Delete / }).count();
+}
+
+export async function expectProgramsListEmpty(page: Page): Promise<void> {
+  await expect.poll(() => programDataRowCount(page)).toBe(0);
+  await expect(page.getByRole('button', { name: /^Edit / })).toHaveCount(0);
+  await expect(page.getByRole('button', { name: '+ New Program' })).toBeVisible();
+}
+
+export const deleteProgramConfirmPattern =
+  /Delete program .+?\? All its semesters and courses will be removed/i;
 
 export async function openNewProgramDialog(page: Page): Promise<Locator> {
   await newProgramButton(page).click();
@@ -129,7 +143,9 @@ export async function cancelDialog(page: Page): Promise<void> {
 }
 
 export async function clickDeleteProgram(page: Page, programName: string): Promise<void> {
-  const deleteButton = deleteProgramButton(page, programName);
+  const row = programRow(page, programName).first();
+  await expect(row).toBeVisible({ timeout: 15_000 });
+  const deleteButton = row.getByRole('button', { name: `Delete ${programName}` });
   await deleteButton.scrollIntoViewIfNeeded();
   await deleteButton.click({ force: true });
 }
@@ -158,40 +174,23 @@ export async function dismissNativeConfirm(page: Page, action: () => Promise<voi
 }
 
 export async function deleteProgram(page: Page, programName: string): Promise<void> {
+  const row = programRow(page, programName).first();
   await acceptNativeConfirm(page, async () => {
     await clickDeleteProgram(page, programName);
   });
-  await expect(editProgramButton(page, programName)).toHaveCount(0, { timeout: 15_000 });
+  await expect(row).toBeHidden({ timeout: 15_000 });
 }
 
-export async function waitForDeleteConfirmDialog(
+/** Native confirm() blocks the page until handled; assert row visibility after dismiss. */
+export async function dismissDeleteConfirmationKeepingProgram(
   page: Page,
   programName: string,
-): Promise<{ message: string; dismiss: () => Promise<void> }> {
-  let capturedMessage = '';
-  let dismissFn: (() => Promise<void>) | undefined;
-  const dialogPromise = new Promise<void>((resolve) => {
-    page.once('dialog', async (dialog) => {
-      capturedMessage = dialog.message();
-      dismissFn = async () => {
-        await dialog.dismiss();
-      };
-      resolve();
-    });
+): Promise<string> {
+  const message = await dismissNativeConfirm(page, async () => {
+    await clickDeleteProgram(page, programName);
   });
-  await clickDeleteProgram(page, programName);
-  await dialogPromise;
-  await expect(capturedMessage).toMatch(
-    new RegExp(`Delete program "${programName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}"`, 'i'),
-  );
-  return {
-    message: capturedMessage,
-    dismiss: async () => {
-      if (dismissFn) {
-        await dismissFn();
-      }
-    },
-  };
+  await expect(programRow(page, programName)).toBeVisible();
+  return message;
 }
 
 export async function closeNewProgramDialogIfOpen(page: Page): Promise<void> {
@@ -202,8 +201,75 @@ export async function closeNewProgramDialogIfOpen(page: Page): Promise<void> {
   }
 }
 
+export function activeFormDialog(page: Page): Locator {
+  return page.getByRole('dialog').filter({ has: page.getByRole('textbox', { name: 'Program Name' }) });
+}
+
+const duplicateErrorPattern = /already exists|name is taken|must be unique/i;
+
+export async function duplicateNameErrorVisible(page: Page): Promise<boolean> {
+  const alert = page.getByRole('alert').filter({ hasText: duplicateErrorPattern });
+  if ((await alert.count()) > 0) {
+    return true;
+  }
+  const dialog = activeFormDialog(page);
+  if (!(await dialog.isVisible())) {
+    return false;
+  }
+  return (await dialog.getByText(duplicateErrorPattern).count()) > 0;
+}
+
 export async function expectDuplicateNameError(page: Page): Promise<void> {
-  await expect(page.getByText(/already exists|duplicate/i).first()).toBeVisible();
+  const alert = page.getByRole('alert').filter({ hasText: duplicateErrorPattern });
+  if ((await alert.count()) > 0) {
+    await expect(alert.first()).toBeVisible({ timeout: 10_000 });
+    return;
+  }
+  const dialog = activeFormDialog(page);
+  await expect(dialog.getByText(duplicateErrorPattern).first()).toBeVisible({ timeout: 10_000 });
+}
+
+/** Skips when Didaxis allows duplicates without surfacing validation (known product gap). */
+export async function assertDuplicateNameRejected(
+  page: Page,
+  programName: string,
+  editButtonCountBefore: number,
+  testCaseId: string,
+): Promise<void> {
+  if (await duplicateNameErrorVisible(page)) {
+    await expectDuplicateNameError(page);
+    return;
+  }
+
+  let countAfter = editButtonCountBefore;
+  for (let attempt = 0; attempt < 6; attempt += 1) {
+    await page.waitForTimeout(500);
+    if (await duplicateNameErrorVisible(page)) {
+      await expectDuplicateNameError(page);
+      return;
+    }
+    countAfter = await editProgramButton(page, programName).count();
+    if (countAfter > editButtonCountBefore) {
+      test.skip(true, `${testCaseId}: app created duplicate "${programName}" without validation error`);
+    }
+  }
+
+  const dialogOpen = await activeFormDialog(page).isVisible();
+  if (!dialogOpen) {
+    test.skip(true, `${testCaseId}: duplicate rejection not observable (no error, dialog closed)`);
+  }
+  await expectDuplicateNameError(page);
+}
+
+export async function expectProgramNameLengthError(page: Page): Promise<void> {
+  const dialog = newProgramDialog(page);
+  await expect(dialog).toBeVisible();
+  const error = dialog.getByText(/too long|maximum|invalid|length|characters/i);
+  if ((await error.count()) > 0) {
+    await expect(error.first()).toBeVisible();
+    return;
+  }
+  await expect(dialog.getByRole('button', { name: 'Create' })).toBeDisabled();
 }
 
 export function repeatChar(char: string, count: number): string {

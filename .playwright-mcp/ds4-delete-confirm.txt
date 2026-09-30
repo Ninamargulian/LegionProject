@@ -1,0 +1,4 @@
+Native confirm (Playwright MCP probe, test.didaxis.studio Programs):
+Delete program "{name}"? All its semesters and courses will be removed. This cannot be undone.
+
+Delete control: row-scoped button with accessible name `Delete {programName}` (aria-label).
