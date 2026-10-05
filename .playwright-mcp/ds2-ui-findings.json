@@ -1,0 +1,23 @@
+{
+  "exploredAt": "2026-10-05T03:03:28.112Z",
+  "site": "https://test.didaxis.studio",
+  "source": "Playwright MCP probe (tests/didaxis/_explore-ds2-ui.spec.ts)",
+  "urlAfterLogin": "https://test.didaxis.studio/programs",
+  "editDialog": {
+    "title": "Edit Program",
+    "fields": ["Program Name", "Description"],
+    "actions": ["Save", "Cancel"]
+  },
+  "saveDisabledWhenNameEmpty": true,
+  "saveEnabledWhenDescriptionEmpty": true,
+  "duplicateRenameAttempt": {
+    "duplicateErrorVisible": false,
+    "editDialogOpen": false,
+    "editButtonsForTargetName": 2,
+    "otherNameStillPresent": false
+  },
+  "length256": {
+    "inputLength": 255,
+    "saveEnabled": true
+  }
+}

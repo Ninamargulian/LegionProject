@@ -128,12 +128,21 @@ export async function openEditProgram(page: Page, programName: string): Promise<
   return dialog;
 }
 
-export async function saveEditProgram(page: Page): Promise<void> {
+export async function waitForProgramInList(page: Page, programName: string): Promise<void> {
+  const edit = editProgramButton(page, programName);
+  await edit.scrollIntoViewIfNeeded();
+  await expect(edit).toBeVisible({ timeout: 30_000 });
+}
+
+export async function saveEditProgram(page: Page, programNameAfterSave?: string): Promise<void> {
   const dialog = editProgramDialog(page);
   const save = dialog.getByRole('button', { name: 'Save' });
   await expect(save).toBeEnabled();
   await save.click();
   await expect(dialog).toBeHidden({ timeout: 15_000 });
+  if (programNameAfterSave) {
+    await waitForProgramInList(page, programNameAfterSave);
+  }
 }
 
 export async function cancelDialog(page: Page): Promise<void> {

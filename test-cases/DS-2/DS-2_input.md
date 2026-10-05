@@ -16,6 +16,8 @@ And a program "Web Development 2026" exists
 When I click the edit icon on "Web Development 2026"
 Then I see the edit form pre-populated with the program's current data
 
+Note (test.didaxis.studio): the control is a button with aria-label "Edit {Program Name}", inside the **Edit Program** modal titled **Edit Program**, fields **Program Name** and **Description**.
+
 Scenario: Successfully edit a program name
 Given I am editing "Web Development 2026"
 When I change the Name to "Web Development 2026 - Updated"
