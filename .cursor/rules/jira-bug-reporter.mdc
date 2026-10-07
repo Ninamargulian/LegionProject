@@ -1,0 +1,12 @@
+---
+description: When the user asks to create or file a Jira bug (from test failures or Playwright), follow the jira-bug-reporter project skill.
+alwaysApply: true
+---
+
+# Jira bug requests
+
+When the user asks to **create a Jira bug**, **file a bug**, **report a test failure in Jira**, or similar:
+
+1. Read and follow `.cursor/skills/jira-bug-reporter/SKILL.md` completely (investigate artifacts, structured description, link to story, attach screenshots).
+2. Do not skip the skill in favor of ad-hoc Jira creation.
+3. Do not auto-fix tests or product code unless the user explicitly asks separately.
