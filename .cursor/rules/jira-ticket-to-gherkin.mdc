@@ -1,0 +1,12 @@
+---
+description: When the user references a Jira ticket (DS-1, DS-2, etc.) and asks for test cases, Gherkin scenarios, or a test plan, follow the jira-ticket-to-gherkin project skill.
+alwaysApply: false
+---
+
+# Jira ticket → Gherkin test cases
+
+When the user asks to **generate test cases**, **write scenarios**, **create a test plan**, or similar for a **Jira ticket** (e.g. DS-1):
+
+1. Read and follow `.agents/skills/jira-ticket-to-gherkin/SKILL.md` completely (fetch the ticket via Atlassian MCP, cover every acceptance criterion, add negative and edge cases, save to `features/<ticket-key>.feature`).
+2. Do not skip the skill in favor of ad-hoc scenarios.
+3. Do not write Playwright code unless the user explicitly asks after the feature file is approved.
