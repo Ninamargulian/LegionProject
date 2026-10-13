@@ -1,4 +1,8 @@
 import { expect, Locator, Page, test } from '@playwright/test';
+import {
+  isProgramCreateResponse,
+  parseProgramUuidFromCreateResponse,
+} from './programs.api';
 
 export function requireEnv(name: string): string {
   const value = process.env[name];
@@ -108,17 +112,40 @@ export async function createProgram(
   page: Page,
   programName: string,
   description: string,
-): Promise<void> {
+): Promise<string> {
   const dialog = await openNewProgramDialog(page);
   await programNameField(dialog).fill(programName);
   await programDescriptionField(dialog).fill(description);
   const create = dialog.getByRole('button', { name: 'Create' });
   await expect(create).toBeEnabled();
+
+  const createResponsePromise = page.waitForResponse(
+    (response) =>
+      isProgramCreateResponse(response.url(), response.request().method(), response.status()),
+    { timeout: 30_000 },
+  );
+
   await create.click();
-  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  const [response] = await Promise.all([
+    createResponsePromise,
+    expect(dialog).toBeHidden({ timeout: 15_000 }),
+  ]);
+  let uuid: string | undefined;
+  try {
+    uuid = parseProgramUuidFromCreateResponse(await response.json());
+  } catch {
+    uuid = undefined;
+  }
   const editButton = editProgramButton(page, programName);
   await editButton.scrollIntoViewIfNeeded();
   await expect(editButton).toBeVisible({ timeout: 15_000 });
+
+  if (!uuid) {
+    throw new Error(
+      `createProgram: could not read program uuid from POST /api/programs response for "${programName}"`,
+    );
+  }
+  return uuid;
 }
 
 export async function openEditProgram(page: Page, programName: string): Promise<Locator> {
@@ -148,7 +175,10 @@ export async function saveEditProgram(page: Page, programNameAfterSave?: string)
 export async function cancelDialog(page: Page): Promise<void> {
   const dialog = page.getByRole('dialog').filter({ has: page.getByRole('button', { name: 'Cancel' }) });
   await dialog.getByRole('button', { name: 'Cancel' }).click();
-  await expect(dialog).toBeHidden();
+  if (await dialog.isVisible()) {
+    await page.keyboard.press('Escape');
+  }
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
 }
 
 export async function clickDeleteProgram(page: Page, programName: string): Promise<void> {

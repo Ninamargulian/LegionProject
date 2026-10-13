@@ -7,7 +7,9 @@
     "test": "tests"
   },
   "scripts": {
-    "lint": "eslint \"tests/**/*.spec.ts\" --no-warn-ignored"
+    "lint": "eslint \"tests/**/*.spec.ts\" --no-warn-ignored",
+    "delete-programs": "playwright test tests/manual/bulk-delete-programs.spec.ts --workers=1 --reporter=line",
+    "test:practice": "playwright test tests/practice --workers=1 --reporter=line"
   },
   "keywords": [],
   "type": "commonjs",

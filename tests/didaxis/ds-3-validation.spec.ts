@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/cleanup.fixture';
 import {
   closeNewProgramDialogIfOpen,
   createProgram,
@@ -19,14 +19,16 @@ import {
 } from './programs.helpers';
 
 test.describe('DS-3 Program name validation and duplicate prevention', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     test.setTimeout(90_000);
     await loginAsAdmin(page);
   });
 
-  test('TC-001: Program list shows special-character program name', async ({ page }) => {
+  test('TC-001: Program list shows special-character program name', async ({ page, trackProgram }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
-    await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle");
+    trackProgram(await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle"));
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
@@ -43,9 +45,9 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
     }
   });
 
-  test('TC-003: Duplicate name shows an already-exists error', async ({ page }) => {
+  test('TC-003: Duplicate name shows an already-exists error', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    await createProgram(page, name, 'Full-stack web development program');
+    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
     const countBeforeDuplicate = await editProgramButton(page, name).count();
 
     const dialog = await openNewProgramDialog(page);
@@ -57,9 +59,9 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
     await closeNewProgramDialogIfOpen(page);
   });
 
-  test('TC-004: Trailing space on Program Name is treated as duplicate', async ({ page }) => {
+  test('TC-004: Trailing space on Program Name is treated as duplicate', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    await createProgram(page, name, 'Full-stack web development program');
+    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
     const countBeforeDuplicate = await editProgramButton(page, name).count();
 
     const dialog = await openNewProgramDialog(page);
@@ -71,9 +73,9 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
     await closeNewProgramDialogIfOpen(page);
   });
 
-  test('TC-005: Case-variant duplicate is rejected', async ({ page }) => {
+  test('TC-005: Case-variant duplicate is rejected', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    await createProgram(page, name, 'Full-stack web development program');
+    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
 
     const dialog = await openNewProgramDialog(page);
     await programNameField(dialog).fill(name.toLowerCase());
@@ -94,21 +96,21 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
     await closeNewProgramDialogIfOpen(page);
   });
 
-  test('TC-006: Single-character Program Name is accepted', async ({ page }) => {
+  test('TC-006: Single-character Program Name is accepted', async ({ page, trackProgram }) => {
     const name = uniqueName('A');
-    await createProgram(page, name, 'Single-character program name');
+    trackProgram(await createProgram(page, name, 'Single-character program name'));
     await expect(programRow(page, name)).toBeVisible();
   });
 
-  test('TC-007: 255-character Program Name is accepted', async ({ page }) => {
+  test('TC-007: 255-character Program Name is accepted', async ({ page, trackProgram }) => {
     const name = `MaxLen255-${Date.now()}${repeatChar('W', 230)}`.slice(0, 255);
-    await createProgram(page, name, 'Boundary length program name');
+    trackProgram(await createProgram(page, name, 'Boundary length program name'));
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
-  test('TC-008: Program Name with quotes and brackets is stored as text', async ({ page }) => {
+  test('TC-008: Program Name with quotes and brackets is stored as text', async ({ page, trackProgram }) => {
     const name = uniqueName('Web "Dev" <2026>');
-    await createProgram(page, name, 'Name with quotes and brackets');
+    trackProgram(await createProgram(page, name, 'Name with quotes and brackets'));
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 

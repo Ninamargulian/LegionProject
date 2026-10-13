@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from '../../fixtures/cleanup.fixture';
 import {
   acceptNativeConfirm,
   clickDeleteProgram,
@@ -18,14 +18,19 @@ import {
 } from './programs.helpers';
 
 test.describe('DS-4 Delete program with confirmation', () => {
+  test.describe.configure({ mode: 'serial' });
+
   test.beforeEach(async ({ page }) => {
     test.setTimeout(90_000);
     await loginAsAdmin(page);
   });
 
-  test('TC-001: Program is removed from the list after deletion is confirmed', async ({ page }) => {
+  test('TC-001: Program is removed from the list after deletion is confirmed', async ({
+    page,
+    trackProgram,
+  }) => {
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion');
+    trackProgram(await createProgram(page, name, 'Temporary program used for deletion'));
 
     const message = await acceptNativeConfirm(page, async () => {
       await clickDeleteProgram(page, name);
@@ -35,10 +40,10 @@ test.describe('DS-4 Delete program with confirmation', () => {
     await expect(programRow(page, name)).toHaveCount(0);
   });
 
-  test('TC-002: Program remains in the list after Cancel', async ({ page }) => {
+  test('TC-002: Program remains in the list after Cancel', async ({ page, trackProgram }) => {
     const name = uniqueName('Test Program');
     const description = 'Temporary program used for deletion';
-    await createProgram(page, name, description);
+    trackProgram(await createProgram(page, name, description));
 
     await dismissNativeConfirm(page, async () => {
       await clickDeleteProgram(page, name);
@@ -49,20 +54,23 @@ test.describe('DS-4 Delete program with confirmation', () => {
     await expect(programDescriptionInRow(row)).toHaveText(description);
   });
 
-  test('TC-003: Program remains visible while confirmation dialog is open', async ({ page }) => {
+  test('TC-003: Program remains visible while confirmation dialog is open', async ({
+    page,
+    trackProgram,
+  }) => {
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion');
+    trackProgram(await createProgram(page, name, 'Temporary program used for deletion'));
 
     const message = await dismissDeleteConfirmationKeepingProgram(page, name);
     expect(message).toMatch(deleteProgramConfirmPattern);
     await expect(programRow(page, name)).toBeVisible();
   });
 
-  test('TC-004: Other programs remain after targeted deletion', async ({ page }) => {
+  test('TC-004: Other programs remain after targeted deletion', async ({ page, trackProgram }) => {
     const testProgram = uniqueName('Test Program');
     const keepProgram = uniqueName('Web Development 2026');
-    await createProgram(page, testProgram, 'Temporary program used for deletion');
-    await createProgram(page, keepProgram, 'Full-stack web development program');
+    trackProgram(await createProgram(page, testProgram, 'Temporary program used for deletion'));
+    trackProgram(await createProgram(page, keepProgram, 'Full-stack web development program'));
 
     await deleteProgram(page, testProgram);
 
@@ -71,7 +79,10 @@ test.describe('DS-4 Delete program with confirmation', () => {
     await expect(programDescriptionInRow(row)).toHaveText('Full-stack web development program');
   });
 
-  test('TC-005: Empty state appears after the only program is deleted', async ({ page }) => {
+  test('TC-005: Empty state appears after the only program is deleted', async ({
+    page,
+    trackProgram,
+  }) => {
     const rowsBefore = await programDataRowCount(page);
     if (rowsBefore > 0) {
       test.skip(
@@ -81,24 +92,30 @@ test.describe('DS-4 Delete program with confirmation', () => {
     }
 
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion');
+    trackProgram(await createProgram(page, name, 'Temporary program used for deletion'));
     await deleteProgram(page, name);
 
     // MCP: empty list shows Programs heading + New Program; no table rows (no empty-state banner copy).
     await expectProgramsListEmpty(page);
   });
 
-  test('TC-006: Special-character program is removed after confirmed deletion', async ({ page }) => {
+  test('TC-006: Special-character program is removed after confirmed deletion', async ({
+    page,
+    trackProgram,
+  }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
-    await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle");
+    trackProgram(await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle"));
     await deleteProgram(page, name);
     await expect(programRow(page, name)).toHaveCount(0);
   });
 
-  test('TC-007: Long-name program remains after delete is cancelled', async ({ page }) => {
+  test('TC-007: Long-name program remains after delete is cancelled', async ({
+    page,
+    trackProgram,
+  }) => {
     const name = `MaxLen255Del-${Date.now()}${repeatChar('W', 220)}`.slice(0, 255);
     const description = 'Boundary length program name';
-    await createProgram(page, name, description);
+    trackProgram(await createProgram(page, name, description));
 
     await dismissNativeConfirm(page, async () => {
       await clickDeleteProgram(page, name);
@@ -109,11 +126,14 @@ test.describe('DS-4 Delete program with confirmation', () => {
     await expect(programDescriptionInRow(row)).toHaveText(description);
   });
 
-  test('TC-008: Confirming deletion once removes only the targeted program', async ({ page }) => {
+  test('TC-008: Confirming deletion once removes only the targeted program', async ({
+    page,
+    trackProgram,
+  }) => {
     const testProgram = uniqueName('Test Program');
     const keepProgram = uniqueName('Web Development 2026');
-    await createProgram(page, testProgram, 'Temporary program used for deletion');
-    await createProgram(page, keepProgram, 'Full-stack web development program');
+    trackProgram(await createProgram(page, testProgram, 'Temporary program used for deletion'));
+    trackProgram(await createProgram(page, keepProgram, 'Full-stack web development program'));
 
     await deleteProgram(page, testProgram);
 

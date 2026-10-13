@@ -1,0 +1,12 @@
+---
+description: When generating or reviewing Playwright tests that create programs or other persistent Didaxis data, follow the api-cleanup project skill so test data is removed via the API.
+alwaysApply: false
+---
+
+# API cleanup for Didaxis tests
+
+When **writing**, **extending**, or **reviewing** Playwright tests that **create programs** (or other persistent records) in Didaxis:
+
+1. Read and follow `.agents/skills/api-cleanup/SKILL.md` completely (`fixtures/cleanup.fixture.ts`, `trackProgram(uuid)`, DELETE via API, `DIDAXIS_API_TOKEN`).
+2. Apply cleanup for every test that creates data — even if the user did not ask for cleanup explicitly.
+3. Do not rely on UI delete for teardown unless the skill is updated to allow it.

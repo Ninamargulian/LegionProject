@@ -3,7 +3,7 @@
 ## Inferred from Playwright
 
 - **Story:** DS-2  
-- **Spec:** `tests/ds2-edit-program.spec.ts`  
+- **Spec:** `tests/didaxis/ds-2-edit-program.spec.ts`  
 - **Test:** `TC-002: Program list shows updated name immediately after Save (Jira rename AC)`  
 - **Assertion:** `Edit {original name}` count expected 0, received 1  
 
@@ -22,7 +22,7 @@ After saving a program rename on `/programs`, the list shows the new name but th
 - Browser: chromium, workers=1
 
 ## Failing test
-- **Spec:** `tests/ds2-edit-program.spec.ts`
+- **Spec:** `tests/didaxis/ds-2-edit-program.spec.ts`
 - **Test:** TC-002: Program list shows updated name immediately after Save (Jira rename AC)
 
 ## Steps to reproduce

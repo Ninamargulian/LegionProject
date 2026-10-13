@@ -19,7 +19,7 @@ Turn a failed Playwright test into a **Bug** in Jira, **linked to the story** un
    - `test-results/**/error-context.md`
    - `test-results/**/test-failed-*.png` (or trace screenshot)
    - Playwright HTML report if present: `playwright-report/index.html`
-2. **Test source**: the spec file and test title (e.g. `tests/ds2-edit-program.spec.ts` — TC-002).
+2. **Test source**: the spec file and test title (e.g. `tests/didaxis/ds-2-edit-program.spec.ts` — TC-002).
 3. **Story mapping**: infer Jira key from spec/describe name or `@TC` / feature file (DS-1 → `DS-1`). Confirm with `getJiraIssue` if unclear.
 4. **Root cause**: product defect vs test/locator/env (shared tenant, flaky create modal). State which in the bug; do not file product bugs for pure test strict-mode issues without noting "test data / locator".
 

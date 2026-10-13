@@ -13,6 +13,11 @@ dotenv.config({ path: path.resolve(__dirname, '.env') });
  */
 export default defineConfig({
   testDir: './tests',
+  /* Manual bulk-delete and practice specs stay out of default / CI runs. */
+  testIgnore: [
+    ...(process.env.DIDAXIS_DELETE_COUNT ? [] : ['**/manual/**']),
+    ...(process.env.npm_lifecycle_event === 'test:practice' ? [] : ['**/practice/**']),
+  ],
   /* Run tests in files in parallel */
   fullyParallel: true,
   /* Fail the build on CI if you accidentally left test.only in the source code. */
