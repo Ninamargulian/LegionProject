@@ -6,6 +6,9 @@ import {
 } from '../didaxis/programs.api';
 import { loginAsAdmin } from '../didaxis/programs.helpers';
 
+/** uniqueName() appends Date.now() — a 13-digit millisecond timestamp. */
+const testProgramNamePattern = /\d{13}/;
+
 function requestedDeleteCount(available: number): number {
   const raw = process.env.DIDAXIS_DELETE_COUNT?.trim().toLowerCase();
   if (!raw) {
@@ -17,7 +20,7 @@ function requestedDeleteCount(available: number): number {
   if (raw === 'all') {
     if (process.env.DIDAXIS_DELETE_CONFIRM_ALL !== 'I_UNDERSTAND') {
       throw new Error(
-        'Refusing to delete ALL programs. Re-run with DIDAXIS_DELETE_COUNT=all and DIDAXIS_DELETE_CONFIRM_ALL=I_UNDERSTAND if you really mean it.',
+        'Refusing to delete ALL matching test programs. Re-run with DIDAXIS_DELETE_COUNT=all and DIDAXIS_DELETE_CONFIRM_ALL=I_UNDERSTAND if you really mean it.',
       );
     }
     return available;
@@ -40,25 +43,38 @@ test.describe('Manual Didaxis bulk program delete', () => {
     const token = await captureBearerTokenFromPage(page, 60_000, { ignoreEnv: true });
 
     const programs = await listPrograms(token);
-    const ids: string[] = programs.map((program) => program.id);
+    const testPrograms = programs.filter((program) =>
+      testProgramNamePattern.test(program.name ?? ''),
+    );
 
-    console.log(`[bulk-delete] GET /api/programs returned ${ids.length} id(s)`);
-    expect(ids.length).toBeGreaterThan(0);
+    console.log(`[bulk-delete] GET /api/programs returned ${programs.length} program(s)`);
+    console.log(
+      `[bulk-delete] ${testPrograms.length} matched /\\d{13}/ (Playwright uniqueName timestamps)`,
+    );
 
-    const toDelete = requestedDeleteCount(ids.length);
-    const batch = ids.slice(0, toDelete);
-    console.log(`[bulk-delete] Will delete first ${batch.length} of ${ids.length} program(s)`);
-    if (programs[0]?.name) {
-      console.log(`[bulk-delete] First in batch: ${programs[0].name} (${batch[0]})`);
+    const toDelete = requestedDeleteCount(testPrograms.length);
+    const batch = testPrograms.slice(0, toDelete);
+    const dryRun = process.env.DIDAXIS_DELETE_DRY_RUN === '1';
+
+    console.log(
+      `[bulk-delete] ${dryRun ? 'Dry-run would delete' : 'Will delete'} first ${batch.length} of ${testPrograms.length} matching program(s)`,
+    );
+    for (const program of batch) {
+      console.log(`[bulk-delete]   ${program.name ?? '(no name)'} (${program.id})`);
+    }
+
+    if (dryRun) {
+      console.log(`[bulk-delete] Dry-run: deleted 0/${batch.length} (no API DELETE sent)`);
+      return;
     }
 
     let deleted = 0;
-    for (const id of batch) {
-      const { ok, status } = await deleteProgramByUuid(id, token);
+    for (const program of batch) {
+      const { ok, status } = await deleteProgramByUuid(program.id, token);
       if (ok) {
         deleted += 1;
       } else {
-        console.warn(`[bulk-delete] Failed to delete ${id} (HTTP ${status})`);
+        console.warn(`[bulk-delete] Failed to delete ${program.id} (HTTP ${status})`);
       }
     }
 
