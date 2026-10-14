@@ -17,7 +17,7 @@ import {
 
 test.describe('DS-1 Create new academic program', () => {
   test.describe.configure({ mode: 'serial' });
-  // Programs created here are tracked and deleted via API after this file's tests finish.
+  // Programs created here are tracked and deleted via API after all tests in the worker finish.
 
   test.beforeEach(async ({ page }) => {
     test.setTimeout(90_000);
