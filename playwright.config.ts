@@ -15,7 +15,7 @@ export default defineConfig({
   testDir: './tests',
   /* Manual bulk-delete and practice specs stay out of default / CI runs. */
   testIgnore: [
-    ...(process.env.DIDAXIS_DELETE_COUNT ? [] : ['**/manual/**']),
+    ...(process.env.npm_lifecycle_event === 'delete-programs' ? [] : ['**/manual/**']),
     ...(process.env.npm_lifecycle_event === 'test:practice' ? [] : ['**/practice/**']),
   ],
   /* Run tests in files in parallel */
