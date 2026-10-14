@@ -7,6 +7,8 @@ alwaysApply: false
 
 When **writing**, **extending**, or **reviewing** Playwright tests that **create programs** (or other persistent records) in Didaxis:
 
-1. Read and follow `.agents/skills/api-cleanup/SKILL.md` completely (`fixtures/cleanup.fixture.ts`, `trackProgram(uuid)`, DELETE via API, `DIDAXIS_API_TOKEN`).
-2. Apply cleanup for every test that creates data — even if the user did not ask for cleanup explicitly.
-3. Do not rely on UI delete for teardown unless the skill is updated to allow it.
+1. Read and follow `.agents/skills/api-cleanup/SKILL.md` completely.
+2. Import `test` from `fixtures/cleanup.fixture.ts`. Pass `trackProgram` as the fourth argument of `createProgram`. Cleanup runs once per Playwright **worker**, not per file.
+3. Use `DIDAXIS_URL` and a token from `.env` or a live page request — never a hardcoded host or token.
+4. Apply cleanup for every test that creates data — even if the user did not ask for cleanup explicitly.
+5. Do not rely on UI delete for teardown. Manual bulk-delete may only remove names with a 13-digit timestamp.

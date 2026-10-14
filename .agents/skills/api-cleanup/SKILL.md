@@ -14,19 +14,30 @@ its UUID and delete it via the API afterwards.
 ## Steps
 1. Use the shared cleanup fixture in `fixtures/cleanup.fixture.ts`.
    Import `test` from there, not from `@playwright/test`.
-2. When a test creates a program, capture the program's UUID and call
-   `trackProgram(uuid)` immediately.
-3. Do not write manual `afterAll` blocks for cleanup — the fixture
-   collects UUIDs during the run and deletes them after all tests
-   in the worker finish.
+2. When a test creates a program, pass `trackProgram` as the fourth
+   argument of `createProgram` so the UUID is tracked as soon as the
+   POST `/api/programs` response is parsed:
+   `await createProgram(page, name, description, trackProgram)`
+3. Do not write manual `afterAll` blocks for cleanup. The fixture
+   uses worker scope (`scope: 'worker'`): it collects UUIDs during the
+   run and deletes them once, after all tests in that worker finish.
 4. Cleanup uses the DELETE API, not the UI:
-   `DELETE /api/programs/<uuid>` with a Bearer token from
-   `process.env.DIDAXIS_API_TOKEN`.
-5. Never hardcode the token. Never delete data the test did not create.
+   `DELETE ${DIDAXIS_URL}/api/programs/<uuid>` with a Bearer token.
+   The token comes from `.env` (`DIDAXIS_API_TOKEN` or `DIDAXIS_API_KEY`)
+   or is captured from page requests after login when that token is
+   expired. See `captureBearerTokenFromPage` in
+   `tests/didaxis/programs.api.ts`. Never hardcode the token.
+5. Never delete data the test did not create. The manual bulk-delete
+   spec (`tests/manual/bulk-delete-programs.spec.ts`) may only target
+   programs whose name contains a 13-digit timestamp (`/\d{13}/`),
+   which `uniqueName()` adds via `Date.now()`.
 
 ## Reference
 
-- Endpoint: `DELETE https://test.didaxis.studio/api/programs/<uuid>`
-- Auth: `Authorization: Bearer ${DIDAXIS_API_TOKEN}`
+- Base URL: `process.env.DIDAXIS_URL` (do not hardcode the host)
+- Endpoint: `DELETE ${DIDAXIS_URL}/api/programs/<uuid>`
+- Auth: `Authorization: Bearer <token from .env or a live page request>`
 
-If the token expired, capture a new one after login: DevTools → Network → any authorized API call → `Authorization` header, or listen for Bearer tokens on the Playwright `page` (see `captureBearerTokenFromPage` in `tests/didaxis/programs.api.ts`). Store it in `.env` as `DIDAXIS_API_TOKEN` (do not commit).
+Store a token in `.env` as `DIDAXIS_API_TOKEN` if you have one (do not
+commit `.env`). If it expires, the fixture remembers a Bearer from UI
+network traffic after login.
