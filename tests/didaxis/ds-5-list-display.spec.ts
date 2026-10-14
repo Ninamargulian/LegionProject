@@ -25,8 +25,8 @@ test.describe('DS-5 Program list filtering and display', () => {
   }) => {
     const web = uniqueName('Web Development 2026');
     const info = uniqueName('Informatique & IA - Niveau 2');
-    trackProgram(await createProgram(page, web, 'Full-stack web development program'));
-    trackProgram(await createProgram(page, info, "Programme d'informatique et d'intelligence artificielle"));
+    await createProgram(page, web, 'Full-stack web development program', trackProgram);
+    await createProgram(page, info, "Programme d'informatique et d'intelligence artificielle", trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, web))).toHaveText(web);
@@ -46,8 +46,8 @@ test.describe('DS-5 Program list filtering and display', () => {
   test('TC-003: Removed program is absent from the list', async ({ page, trackProgram }) => {
     const keep = uniqueName('Web Development 2026');
     const removed = uniqueName('Test Program');
-    trackProgram(await createProgram(page, keep, 'Full-stack web development program'));
-    trackProgram(await createProgram(page, removed, 'Temporary'));
+    await createProgram(page, keep, 'Full-stack web development program', trackProgram);
+    await createProgram(page, removed, 'Temporary', trackProgram);
     await deleteProgram(page, removed);
     await gotoProgramsPage(page);
 
@@ -57,7 +57,7 @@ test.describe('DS-5 Program list filtering and display', () => {
 
   test('TC-004: Programs page shows list when one program exists', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programRow(page, name)).toBeVisible();
@@ -70,7 +70,7 @@ test.describe('DS-5 Program list filtering and display', () => {
   }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
     const description = "Programme d'informatique et d'intelligence artificielle";
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
@@ -82,7 +82,7 @@ test.describe('DS-5 Program list filtering and display', () => {
     trackProgram,
   }) => {
     const name = uniqueName('Data Science 2026');
-    trackProgram(await createProgram(page, name, ''));
+    await createProgram(page, name, '', trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
@@ -91,7 +91,7 @@ test.describe('DS-5 Program list filtering and display', () => {
   test('TC-007: 255-character Program Name is displayed in full', async ({ page, trackProgram }) => {
     const name = `MaxLen255List-${Date.now()}${repeatChar('W', 220)}`.slice(0, 255);
     const description = 'Boundary length program name';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
@@ -101,7 +101,7 @@ test.describe('DS-5 Program list filtering and display', () => {
   test('TC-008: 500-character Description is displayed in full', async ({ page, trackProgram }) => {
     const name = uniqueName('Cybersecurity 2026');
     const description = repeatChar('D', 500);
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
@@ -111,8 +111,8 @@ test.describe('DS-5 Program list filtering and display', () => {
   test('TC-009: Similar program names are both listed', async ({ page, trackProgram }) => {
     const base = uniqueName('Web Development 2026');
     const updated = uniqueName('Web Development 2026 - Updated');
-    trackProgram(await createProgram(page, base, 'Full-stack web development program'));
-    trackProgram(await createProgram(page, updated, 'Renamed full-stack web development program'));
+    await createProgram(page, base, 'Full-stack web development program', trackProgram);
+    await createProgram(page, updated, 'Renamed full-stack web development program', trackProgram);
     await gotoProgramsPage(page);
 
     await expect(programTitleInRow(programRow(page, base))).toHaveText(base);

@@ -112,6 +112,7 @@ export async function createProgram(
   page: Page,
   programName: string,
   description: string,
+  onCreated?: (uuid: string) => void,
 ): Promise<string> {
   const dialog = await openNewProgramDialog(page);
   await programNameField(dialog).fill(programName);
@@ -126,25 +127,24 @@ export async function createProgram(
   );
 
   await create.click();
-  const [response] = await Promise.all([
-    createResponsePromise,
-    expect(dialog).toBeHidden({ timeout: 15_000 }),
-  ]);
+  const response = await createResponsePromise;
   let uuid: string | undefined;
   try {
     uuid = parseProgramUuidFromCreateResponse(await response.json());
   } catch {
     uuid = undefined;
   }
-  const editButton = editProgramButton(page, programName);
-  await editButton.scrollIntoViewIfNeeded();
-  await expect(editButton).toBeVisible({ timeout: 15_000 });
-
   if (!uuid) {
     throw new Error(
       `createProgram: could not read program uuid from POST /api/programs response for "${programName}"`,
     );
   }
+  onCreated?.(uuid);
+
+  await expect(dialog).toBeHidden({ timeout: 15_000 });
+  const editButton = editProgramButton(page, programName);
+  await editButton.scrollIntoViewIfNeeded();
+  await expect(editButton).toBeVisible({ timeout: 15_000 });
   return uuid;
 }
 

@@ -38,7 +38,7 @@ test.describe('DS-1 Create new academic program', () => {
   }) => {
     const name = uniqueName('Web Development 2026');
     const description = 'Full-stack web development program';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     await expect(newProgramDialog(page)).toBeHidden();
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
@@ -72,7 +72,7 @@ test.describe('DS-1 Create new academic program', () => {
 
   test('TC-006: Duplicate Program Name is not added on create', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
     const countBeforeDuplicate = await editProgramButton(page, name).count();
 
     const dialog = await openNewProgramDialog(page);
@@ -85,7 +85,7 @@ test.describe('DS-1 Create new academic program', () => {
 
   test('TC-007: Program list shows a one-character Program Name', async ({ page, trackProgram }) => {
     const name = uniqueName('A');
-    trackProgram(await createProgram(page, name, 'Single-character program name'));
+    await createProgram(page, name, 'Single-character program name', trackProgram);
     await expect(programRow(page, name)).toBeVisible();
   });
 
@@ -94,7 +94,7 @@ test.describe('DS-1 Create new academic program', () => {
     trackProgram,
   }) => {
     const name = `MaxLen255Create-${Date.now()}${repeatChar('W', 220)}`.slice(0, 255);
-    trackProgram(await createProgram(page, name, 'Boundary length program name'));
+    await createProgram(page, name, 'Boundary length program name', trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
@@ -104,7 +104,7 @@ test.describe('DS-1 Create new academic program', () => {
   }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
     const description = "Programme d'informatique et d'intelligence artificielle";
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
@@ -113,7 +113,7 @@ test.describe('DS-1 Create new academic program', () => {
     trackProgram,
   }) => {
     const name = uniqueName('Data Science 2026');
-    trackProgram(await createProgram(page, name, ''));
+    await createProgram(page, name, '', trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
     await expect(programRow(page, name).locator('td').first().locator('p')).toHaveCount(1);
   });

@@ -28,7 +28,7 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
 
   test('TC-001: Program list shows special-character program name', async ({ page, trackProgram }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
-    trackProgram(await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle"));
+    await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle", trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
@@ -47,7 +47,7 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
 
   test('TC-003: Duplicate name shows an already-exists error', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
     const countBeforeDuplicate = await editProgramButton(page, name).count();
 
     const dialog = await openNewProgramDialog(page);
@@ -61,7 +61,7 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
 
   test('TC-004: Trailing space on Program Name is treated as duplicate', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
     const countBeforeDuplicate = await editProgramButton(page, name).count();
 
     const dialog = await openNewProgramDialog(page);
@@ -75,7 +75,7 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
 
   test('TC-005: Case-variant duplicate is rejected', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openNewProgramDialog(page);
     await programNameField(dialog).fill(name.toLowerCase());
@@ -98,19 +98,19 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
 
   test('TC-006: Single-character Program Name is accepted', async ({ page, trackProgram }) => {
     const name = uniqueName('A');
-    trackProgram(await createProgram(page, name, 'Single-character program name'));
+    await createProgram(page, name, 'Single-character program name', trackProgram);
     await expect(programRow(page, name)).toBeVisible();
   });
 
   test('TC-007: 255-character Program Name is accepted', async ({ page, trackProgram }) => {
     const name = `MaxLen255-${Date.now()}${repeatChar('W', 230)}`.slice(0, 255);
-    trackProgram(await createProgram(page, name, 'Boundary length program name'));
+    await createProgram(page, name, 'Boundary length program name', trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 
   test('TC-008: Program Name with quotes and brackets is stored as text', async ({ page, trackProgram }) => {
     const name = uniqueName('Web "Dev" <2026>');
-    trackProgram(await createProgram(page, name, 'Name with quotes and brackets'));
+    await createProgram(page, name, 'Name with quotes and brackets', trackProgram);
     await expect(programTitleInRow(programRow(page, name))).toHaveText(name);
   });
 

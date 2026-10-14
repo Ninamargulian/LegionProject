@@ -40,7 +40,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-001: Edit form shows the current Program Name and Description', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const description = 'Full-stack web development program';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     await page.getByRole('button', { name: `Edit ${name}` }).click();
     const dialog = page.getByRole('dialog', { name: 'Edit Program' });
@@ -55,7 +55,7 @@ test.describe('DS-2 Edit existing program details', () => {
   }) => {
     const name = uniqueName('Web Development 2026');
     const updated = `${name} - Updated`;
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).clear();
@@ -71,7 +71,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-003: Program Name stays unchanged when only Description changes', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const newDescription = 'Evening cohort for full-stack web development';
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programDescriptionField(dialog).fill(newDescription);
@@ -89,7 +89,7 @@ test.describe('DS-2 Edit existing program details', () => {
   }) => {
     const name = uniqueName('Web Development 2026');
     const description = 'Full-stack web development program';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill(`${name} - Updated`);
@@ -105,7 +105,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-005: An empty Program Name is not saved', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const description = 'Full-stack web development program';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill('');
@@ -125,8 +125,8 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-006: Program Name is not changed to a name that already exists', async ({ page, trackProgram }) => {
     const existing = uniqueName('Web Development 2026');
     const other = uniqueName('Data Science 2026');
-    trackProgram(await createProgram(page, existing, 'Full-stack web development program'));
-    trackProgram(await createProgram(page, other, 'Applied data science program'));
+    await createProgram(page, existing, 'Full-stack web development program', trackProgram);
+    await createProgram(page, other, 'Applied data science program', trackProgram);
 
     const dialog = await openEditProgram(page, other);
     await programNameField(dialog).fill(existing);
@@ -159,7 +159,7 @@ test.describe('DS-2 Edit existing program details', () => {
 
   test('TC-007: Description can be cleared while Program Name stays the same', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programDescriptionField(dialog).fill('');
@@ -173,7 +173,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-008: Program list shows the special-character name entered on edit', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const special = uniqueName('Informatique & IA - Niveau 2');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill(special);
@@ -191,7 +191,7 @@ test.describe('DS-2 Edit existing program details', () => {
     // Plan uses "A"; shared tenant uses a single rotating letter to avoid name collisions.
     const oneChar = String.fromCharCode(65 + (Date.now() % 26));
     const description = 'Full-stack web development program';
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill(oneChar);
@@ -209,7 +209,7 @@ test.describe('DS-2 Edit existing program details', () => {
     const suffix = String(Date.now()).slice(-4);
     const longName = (repeatChar('W', 255 - suffix.length) + suffix).slice(0, 255);
     expect(longName).toHaveLength(255);
-    trackProgram(await createProgram(page, name, description));
+    await createProgram(page, name, description, trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill(`${longName}X`);
@@ -226,8 +226,8 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-011: Case-only duplicate name on edit is rejected', async ({ page, trackProgram }) => {
     const existing = uniqueName('Web Development 2026');
     const other = uniqueName('Data Science 2026');
-    trackProgram(await createProgram(page, existing, 'Full-stack web development program'));
-    trackProgram(await createProgram(page, other, 'Applied data science program'));
+    await createProgram(page, existing, 'Full-stack web development program', trackProgram);
+    await createProgram(page, other, 'Applied data science program', trackProgram);
 
     const dialog = await openEditProgram(page, other);
     await programNameField(dialog).fill(existing.toLowerCase());
@@ -257,7 +257,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-012: List reflects the new name without manual refresh', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const updated = `${name} - Updated`;
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).clear();
@@ -274,7 +274,7 @@ test.describe('DS-2 Edit existing program details', () => {
   test('TC-013: Double-click Save does not submit duplicate updates', async ({ page, trackProgram }) => {
     const name = uniqueName('Web Development 2026');
     const updated = `${name} - Updated`;
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const dialog = await openEditProgram(page, name);
     await programNameField(dialog).fill(updated);
@@ -306,7 +306,7 @@ test.describe('DS-2 Edit existing program details', () => {
     await expect(page.getByRole('heading', { name: 'Programs', level: 2 })).toBeVisible();
 
     const name = uniqueName('Web Development 2026');
-    trackProgram(await createProgram(page, name, 'Full-stack web development program'));
+    await createProgram(page, name, 'Full-stack web development program', trackProgram);
 
     const edit = editProgramButton(page, name);
     await edit.scrollIntoViewIfNeeded();
