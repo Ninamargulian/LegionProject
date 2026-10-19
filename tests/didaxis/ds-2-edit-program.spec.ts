@@ -14,7 +14,6 @@ import {
   createProgram,
   editProgramButton,
   editProgramDialog,
-  loginAsAdmin,
   openEditProgram,
   programDescriptionField,
   programDescriptionInRow,
@@ -34,7 +33,8 @@ test.describe('DS-2 Edit existing program details', () => {
 
   test.beforeEach(async ({ page }) => {
     test.setTimeout(120_000);
-    await loginAsAdmin(page);
+    await page.goto('/programs');
+    await expect(page.getByRole('heading', { name: 'Programs', level: 2 })).toBeVisible();
   });
 
   test('TC-001: Edit form shows the current Program Name and Description', async ({ page, trackProgram }) => {
