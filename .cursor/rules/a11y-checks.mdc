@@ -1,0 +1,13 @@
+---
+description: When generating or extending a Playwright spec that opens a page, screen, or fresh page, follow the a11y-checks skill and add an axe scan even if the user did not mention accessibility.
+alwaysApply: false
+---
+
+# Accessibility checks
+
+When **writing** or **extending** a Playwright test that **opens a page**:
+
+1. Read and follow `.agents/skills/a11y-checks/SKILL.md` completely.
+2. Navigate through the page object. Use the stored session. Do not add a UI login.
+3. Scan with `new AxeBuilder({ page }).analyze()` and assert `results.violations` is empty.
+4. Do not call `disableRules()` to make the test pass. Record real violations for the bug reporter.
