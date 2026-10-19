@@ -1,0 +1,14 @@
+---
+description: When generating or reviewing Playwright page objects or Didaxis UI specs, follow the pom-conventions skill so tests use LoginPage, ProgramsPage, and NewProgramModal instead of inline locators.
+alwaysApply: false
+---
+
+# Page Object conventions
+
+When **writing**, **refactoring**, or **reviewing** Playwright UI tests or page objects for Didaxis:
+
+1. Read and follow `.agents/skills/pom-conventions/SKILL.md` completely.
+2. Keep locators in `pages/` as `readonly` constructor properties, using `getByRole`, `getByLabel`, or `getByText` only.
+3. Leave every `expect()` in the spec. Page object methods only perform actions.
+4. Specs stay named `dsX-[ticket-title].spec.ts` and must not contain inline locators.
+5. Tests that create a program still pass `trackProgram` into `createProgram` and follow the api-cleanup skill.
