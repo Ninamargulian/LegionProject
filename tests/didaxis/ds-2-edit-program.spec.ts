@@ -64,7 +64,8 @@ test.describe('DS-2 Edit existing program details', () => {
 
     await expect(page.getByRole('dialog', { name: 'Edit Program' })).toBeHidden();
     await expect(page.getByRole('button', { name: `Edit ${updated}` })).toBeVisible();
-    await expect(page.getByRole('button', { name: `Edit ${name}` })).toHaveCount(0);
+    // updated is `${name} - Updated`, so a substring match also finds the renamed button.
+    await expect(page.getByRole('button', { name: `Edit ${name}`, exact: true })).toHaveCount(0);
     await expect(programTitleInRow(programRow(page, updated))).toHaveText(updated);
   });
 
@@ -267,7 +268,8 @@ test.describe('DS-2 Edit existing program details', () => {
     expect(page.url()).toMatch(/\/programs/);
     await expect(editProgramDialog(page)).toBeHidden();
     await expect(page.getByRole('button', { name: `Edit ${updated}` })).toBeVisible();
-    await expect(page.getByRole('button', { name: `Edit ${name}` })).toHaveCount(0);
+    // updated is `${name} - Updated`, so a substring match also finds the renamed button.
+    await expect(page.getByRole('button', { name: `Edit ${name}`, exact: true })).toHaveCount(0);
     await expect(programTitleInRow(programRow(page, updated))).toHaveText(updated);
   });
 

@@ -116,15 +116,23 @@ test.describe('DS-3 Program name validation and duplicate prevention', () => {
     await programs.newProgramModal.submit();
     await accepted;
 
-    if ((await programs.duplicateNameError.count()) > 0) {
-      await expect(programs.duplicateNameError.first()).toBeVisible();
-      await expect(programs.editButton(name)).toBeVisible();
-    } else if ((await programs.editButton(name.toLowerCase()).count()) > 0) {
+    const variantName = name.toLowerCase();
+    // getByRole name matching is case-insensitive, so the variant row needs exact: true.
+    // The list updates after submit; decide only once the error or the variant row is present.
+    await expect
+      .poll(async () => {
+        const errorCount = await programs.duplicateNameError.count();
+        const variantCount = await programs.editButton(variantName, { exact: true }).count();
+        return errorCount + variantCount;
+      })
+      .toBeGreaterThan(0);
+
+    if ((await programs.editButton(variantName, { exact: true }).count()) > 0) {
       test.skip(true, 'DS-3 TC-005: app does not enforce case-insensitive duplicate check');
-    } else {
-      await expect(programs.editButton(name)).toHaveCount(1);
-      await expect(programs.duplicateNameError.first()).toBeVisible();
     }
+
+    await expect(programs.duplicateNameError.first()).toBeVisible();
+    await expect(programs.editButton(name, { exact: true })).toHaveCount(1);
 
     if (await programs.newProgramModal.dialog.isVisible()) {
       await programs.newProgramModal.cancel();

@@ -42,8 +42,11 @@ export class ProgramsPage {
     return this.programRow(name).getByRole('cell').first();
   }
 
-  editButton(name: string): Locator {
-    return this.page.getByRole('button', { name: `Edit ${name}` });
+  editButton(name: string, options?: { exact?: boolean }): Locator {
+    return this.page.getByRole('button', {
+      name: `Edit ${name}`,
+      exact: options?.exact,
+    });
   }
 
   async createProgram(
