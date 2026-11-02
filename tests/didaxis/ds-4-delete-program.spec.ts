@@ -1,143 +1,141 @@
 import { test, expect } from '../../fixtures/cleanup.fixture';
-import {
-  acceptNativeConfirm,
-  clickDeleteProgram,
-  createProgram,
-  deleteProgram,
-  dismissNativeConfirm,
-  deleteProgramConfirmPattern,
-  loginAsAdmin,
-  programDescriptionInRow,
-  programRow,
-  programTitleInRow,
-  repeatChar,
-  uniqueName,
-  dismissDeleteConfirmationKeepingProgram,
-  expectProgramsListEmpty,
-  programDataRowCount,
-} from './programs.helpers';
+import { ProgramsPage } from '../../pages/ProgramsPage';
+import { uniqueName } from './programs.helpers';
+
+const temporaryDescription = 'Temporary program used for deletion checks';
+const staysDescription = 'Should stay';
+const specialDescription = "Programme d'informatique et d'intelligence artificielle";
+
+function deletionConfirmMessage(name: string): string {
+  return `Delete program "${name}"? All its semesters and courses will be removed. This cannot be undone.`;
+}
 
 test.describe('DS-4 Delete program with confirmation', () => {
   test.describe.configure({ mode: 'serial' });
+  // Programs created here are tracked and deleted via API after all tests in the worker finish.
+
+  let programs: ProgramsPage;
 
   test.beforeEach(async ({ page }) => {
     test.setTimeout(90_000);
-    await loginAsAdmin(page);
+    programs = new ProgramsPage(page);
+    await programs.goto();
+    await expect(programs.heading).toBeVisible();
   });
 
-  test('TC-001: Program is removed from the list after deletion is confirmed', async ({
-    page,
+  async function expectProgramPresent(name: string, description: string): Promise<void> {
+    await expect(programs.programRow(name)).toBeVisible();
+    await expect(programs.programTitle(name)).toHaveText(name);
+    await expect(programs.programDescription(name, description)).toHaveText(description);
+  }
+
+  async function expectProgramAbsent(name: string, description: string): Promise<void> {
+    await expect(programs.deleteButton(name)).toHaveCount(0, { timeout: 15_000 });
+    await expect(programs.editButton(name, { exact: true })).toHaveCount(0);
+    await expect(programs.programRow(name)).toHaveCount(0);
+    await expect(programs.programDescription(name, description)).toHaveCount(0);
+  }
+
+  test('TC-001: Confirming deletion removes Test Program from the list', async ({ trackProgram }) => {
+    const name = uniqueName('Test Program');
+    await programs.createProgram(name, temporaryDescription, trackProgram);
+
+    const message = await programs.confirmDelete(name);
+
+    expect(message).toBe(deletionConfirmMessage(name));
+    await expectProgramAbsent(name, temporaryDescription);
+  });
+
+  test('TC-002: Cancelling the confirmation keeps Test Program in the list', async ({
     trackProgram,
   }) => {
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion', trackProgram);
+    await programs.createProgram(name, temporaryDescription, trackProgram);
 
-    const message = await acceptNativeConfirm(page, async () => {
-      await clickDeleteProgram(page, name);
-    });
-    expect(message).toMatch(deleteProgramConfirmPattern);
+    const message = await programs.cancelDelete(name);
 
-    await expect(programRow(page, name)).toHaveCount(0);
+    expect(message).toBe(deletionConfirmMessage(name));
+    await expectProgramPresent(name, temporaryDescription);
   });
 
-  test('TC-002: Program remains in the list after Cancel', async ({ page, trackProgram }) => {
-    const name = uniqueName('Test Program');
-    const description = 'Temporary program used for deletion';
-    await createProgram(page, name, description, trackProgram);
-
-    await dismissNativeConfirm(page, async () => {
-      await clickDeleteProgram(page, name);
-    });
-
-    const row = programRow(page, name);
-    await expect(row).toBeVisible();
-    await expect(programDescriptionInRow(row)).toHaveText(description);
-  });
-
-  test('TC-003: Program remains visible while confirmation dialog is open', async ({
-    page,
+  test('TC-003: Deleting Test Program does not remove Cloud Engineering 2026', async ({
     trackProgram,
   }) => {
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion', trackProgram);
+    const sibling = uniqueName('Cloud Engineering 2026');
+    await programs.createProgram(name, temporaryDescription, trackProgram);
+    await programs.createProgram(sibling, staysDescription, trackProgram);
 
-    const message = await dismissDeleteConfirmationKeepingProgram(page, name);
-    expect(message).toMatch(deleteProgramConfirmPattern);
-    await expect(programRow(page, name)).toBeVisible();
+    const message = await programs.confirmDelete(name);
+
+    expect(message).toBe(deletionConfirmMessage(name));
+    expect(message).toContain(`"${name}"`);
+    expect(message).not.toContain('Cloud Engineering 2026');
+    expect(message).not.toContain(sibling);
+    await expectProgramAbsent(name, temporaryDescription);
+    await expectProgramPresent(sibling, staysDescription);
   });
 
-  test('TC-004: Other programs remain after targeted deletion', async ({ page, trackProgram }) => {
-    const testProgram = uniqueName('Test Program');
-    const keepProgram = uniqueName('Web Development 2026');
-    await createProgram(page, testProgram, 'Temporary program used for deletion', trackProgram);
-    await createProgram(page, keepProgram, 'Full-stack web development program', trackProgram);
-
-    await deleteProgram(page, testProgram);
-
-    const row = programRow(page, keepProgram);
-    await expect(row).toBeVisible();
-    await expect(programDescriptionInRow(row)).toHaveText('Full-stack web development program');
-  });
-
-  test('TC-005: Empty state appears after the only program is deleted', async ({
-    page,
+  test('TC-004: Cancelling deletion of Test Program leaves Cloud Engineering 2026 unchanged', async ({
     trackProgram,
   }) => {
-    const rowsBefore = await programDataRowCount(page);
-    if (rowsBefore > 0) {
-      test.skip(
-        true,
-        'DS-4 TC-005: requires an empty program list before create (shared Didaxis tenant has existing programs).',
-      );
-    }
-
     const name = uniqueName('Test Program');
-    await createProgram(page, name, 'Temporary program used for deletion', trackProgram);
-    await deleteProgram(page, name);
+    const sibling = uniqueName('Cloud Engineering 2026');
+    await programs.createProgram(name, temporaryDescription, trackProgram);
+    await programs.createProgram(sibling, staysDescription, trackProgram);
 
-    // MCP: empty list shows Programs heading + New Program; no table rows (no empty-state banner copy).
-    await expectProgramsListEmpty(page);
+    const message = await programs.cancelDelete(name);
+
+    expect(message).toBe(deletionConfirmMessage(name));
+    await expectProgramPresent(name, temporaryDescription);
+    await expectProgramPresent(sibling, staysDescription);
   });
 
-  test('TC-006: Special-character program is removed after confirmed deletion', async ({
-    page,
+  test('TC-005: Special-character program name is quoted in the confirmation and removed on confirm', async ({
     trackProgram,
   }) => {
     const name = uniqueName('Informatique & IA - Niveau 2');
-    await createProgram(page, name, "Programme d'informatique et d'intelligence artificielle", trackProgram);
-    await deleteProgram(page, name);
-    await expect(programRow(page, name)).toHaveCount(0);
+    await programs.createProgram(name, specialDescription, trackProgram);
+
+    const message = await programs.confirmDelete(name);
+
+    expect(message).toBe(deletionConfirmMessage(name));
+    await expectProgramAbsent(name, specialDescription);
   });
 
-  test('TC-007: Long-name program remains after delete is cancelled', async ({
+  test('TC-006: Deleted Test Program stays absent after the Programs page is reloaded', async ({
     page,
     trackProgram,
   }) => {
-    const name = `MaxLen255Del-${Date.now()}${repeatChar('W', 220)}`.slice(0, 255);
-    const description = 'Boundary length program name';
-    await createProgram(page, name, description, trackProgram);
+    const name = uniqueName('Test Program');
+    const sibling = uniqueName('Cloud Engineering 2026');
+    await programs.createProgram(name, temporaryDescription, trackProgram);
+    await programs.createProgram(sibling, staysDescription, trackProgram);
 
-    await dismissNativeConfirm(page, async () => {
-      await clickDeleteProgram(page, name);
-    });
+    const message = await programs.confirmDelete(name);
+    expect(message).toBe(deletionConfirmMessage(name));
 
-    const row = programRow(page, name);
-    await expect(programTitleInRow(row)).toHaveText(name);
-    await expect(programDescriptionInRow(row)).toHaveText(description);
+    await page.reload();
+    await expect(programs.heading).toBeVisible();
+    // The list can lag after reload. Wait until the sibling row is back before
+    // treating a missing delete button as proof the deleted program stayed gone.
+    await expect(programs.deleteButton(sibling)).toBeVisible({ timeout: 15_000 });
+    await expectProgramPresent(sibling, staysDescription);
+    await expectProgramAbsent(name, temporaryDescription);
   });
 
-  test('TC-008: Confirming deletion once removes only the targeted program', async ({
-    page,
+  test('TC-007: Double-clicking the delete icon opens one confirmation and does not delete on Cancel', async ({
     trackProgram,
   }) => {
-    const testProgram = uniqueName('Test Program');
-    const keepProgram = uniqueName('Web Development 2026');
-    await createProgram(page, testProgram, 'Temporary program used for deletion', trackProgram);
-    await createProgram(page, keepProgram, 'Full-stack web development program', trackProgram);
+    const name = uniqueName('Test Program');
+    await programs.createProgram(name, temporaryDescription, trackProgram);
 
-    await deleteProgram(page, testProgram);
+    // One confirm is the requirement. A second identical confirm after dismiss
+    // is a product defect (DS-30, DS-109, DS-156, DS-218), not a pass.
+    const messages = await programs.doubleClickDeleteAndDismiss(name);
 
-    await expect(programRow(page, testProgram)).toHaveCount(0);
-    await expect(programRow(page, keepProgram)).toBeVisible();
+    expect(messages).toHaveLength(1);
+    expect(messages[0]).toBe(deletionConfirmMessage(name));
+    await expectProgramPresent(name, temporaryDescription);
   });
 });
