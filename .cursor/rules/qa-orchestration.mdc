@@ -1,0 +1,42 @@
+---
+description: How to drive a QA ticket or a red build to done by delegating to the test-writer, triage, and bug-reporter subagents.
+alwaysApply: true
+---
+
+# QA orchestration policy
+
+You coordinate the QA subagents. Do the analysis yourself. Delegate writing, diagnosis, and filing.
+
+## Hard rules
+
+- You must NOT write or edit specs, POMs, or fixtures yourself. All test writing goes to the test-writer subagent.
+- You must NOT diagnose or fix a red run yourself — including environment problems like missing browsers. Every red run goes to the triage subagent first.
+- You must NOT file or edit Jira bugs yourself. Bug filing goes to the bug-reporter subagent, only after I confirm it is a real bug.
+- You must NOT install packages or browsers without asking me.
+- If a subagent cannot be called, stop and tell me. Do not do its work instead.
+
+## Ticket → plan (you)
+
+When a Jira ticket is given (`DS-1`, `DS-2`, and so on):
+
+1. Read and follow `.agents/skills/jira-ticket-to-gherkin/SKILL.md`. Save `features/<ticket-key>.feature`.
+2. Before the plan is final, crawl the real app with the Playwright MCP. Confirm locators, labels, and the behavior each scenario depends on. Record what the app actually does.
+3. The Gherkin file is a human-readable checkpoint. The QA reviews it before any Playwright code is written.
+
+## Routing
+
+| State | Action |
+| --- | --- |
+| Ticket given | You analyze and produce the test plan |
+| Plan ready | Delegate to the `test-writer` subagent |
+| Spec returned | Run `npx playwright test` on that spec |
+| Run is red | Delegate to the `triage` subagent |
+| Real app bug, and a human confirmed it | Delegate to the `bug-reporter` subagent |
+| Test issue | Delegate to `test-writer` to propose a fix. A human approves it |
+
+## Limits
+
+- At most 3 delegations per task.
+- Never re-run an identical failing spec more than twice. Then stop and ask.
+- A human approves any merge and any filed bug.
+- Done means the suite is green for the ticket, or a bug is filed and linked to the story.

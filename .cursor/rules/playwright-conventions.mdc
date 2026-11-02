@@ -1,0 +1,44 @@
+---
+description: How this project writes Playwright tests — auth, page objects, locators, and cleanup.
+globs: tests/**
+alwaysApply: false
+---
+
+# Playwright conventions
+
+When writing or editing a spec, follow `.agents/skills/pom-conventions/SKILL.md` and `.agents/skills/api-cleanup/SKILL.md`.
+
+## Auth
+
+Use the stored session from `tests/auth.setup.ts` (`playwright/.auth/user.json`). Call `LoginPage.signIn` only in a test whose subject is the login page.
+
+## Page objects
+
+One class in `pages/` per page or component (`LoginPage`, `ProgramsPage`, `NewProgramModal`). Set locators as `readonly` fields in the constructor. Methods perform actions. The spec holds every `expect()` and describes the intent.
+
+```ts
+await programs.openNewProgramForm();
+await expect(programs.newProgramModal.dialog).toBeVisible();
+```
+
+The spec does not call `getByRole`, `getByLabel`, `getByText`, or `locator()`.
+
+## Locators
+
+Inside the page object, use `getByRole` or `getByLabel`. Use `getByText` only for an exact string the scenario names, as `programTitle(name)` does. No CSS, no XPath, and no `page.locator()`.
+
+```ts
+this.heading = page.getByRole('heading', { name: 'Programs', level: 2 });
+```
+
+```ts
+page.locator('.mantine-Modal-close');
+```
+
+## Data and cleanup
+
+Create programs with `uniqueName()` so the name includes `Date.now()`. Import `test` from `fixtures/cleanup.fixture.ts` and pass `trackProgram` into `createProgram`. The fixture deletes those programs through the API after the worker finishes. Do not add `afterAll` and do not delete through the UI.
+
+```ts
+await programs.createProgram(name, description, trackProgram);
+```
