@@ -1,7 +1,7 @@
 ---
 name: bug-reporter
 description: Files a structured Jira bug for a confirmed defect and links it to the story. Use once triage confirms a real app bug.
-model: inherit
+model: composer-2.5-fast
 readonly: true
 ---
 

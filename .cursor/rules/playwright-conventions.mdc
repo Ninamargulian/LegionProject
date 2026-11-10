@@ -1,44 +1,24 @@
 ---
-description: How this project writes Playwright tests — auth, page objects, locators, and cleanup.
+description: how this project writes Playwright tests — auth, POM,
+  locators, data and cleanup
 globs: tests/**
 alwaysApply: false
 ---
 
 # Playwright conventions
 
-When writing or editing a spec, follow `.agents/skills/pom-conventions/SKILL.md` and `.agents/skills/api-cleanup/SKILL.md`.
-
 ## Auth
 
-Use the stored session from `tests/auth.setup.ts` (`playwright/.auth/user.json`). Call `LoginPage.signIn` only in a test whose subject is the login page.
+Stored session by default: `auth.setup.ts` saves `playwright/.auth/user.json`, and other tests start authenticated. Login-page tests clear `storageState`, open `/login`, and sign in through the UI. API login is for bulk setup, one-off scripts, or a stale stored session.
 
-## Page objects
+## Page Objects
 
-One class in `pages/` per page or component (`LoginPage`, `ProgramsPage`, `NewProgramModal`). Set locators as `readonly` fields in the constructor. Methods perform actions. The spec holds every `expect()` and describes the intent.
-
-```ts
-await programs.openNewProgramForm();
-await expect(programs.newProgramModal.dialog).toBeVisible();
-```
-
-The spec does not call `getByRole`, `getByLabel`, `getByText`, or `locator()`.
+Specs act through classes in `pages/` (`LoginPage`, `ProgramsPage`, `NewProgramModal`). Locators are `readonly` constructor properties; methods perform actions; every `expect()` stays in the spec. `ProgramsPage` owns the modal, and the spec does not call locator queries itself.
 
 ## Locators
 
-Inside the page object, use `getByRole` or `getByLabel`. Use `getByText` only for an exact string the scenario names, as `programTitle(name)` does. No CSS, no XPath, and no `page.locator()`.
+Use `getByRole`, `getByLabel`, or `getByText` only. No CSS, no XPath, and no `page.locator()`. A locator that needs a test value, such as a program name, is a method on the page object.
 
-```ts
-this.heading = page.getByRole('heading', { name: 'Programs', level: 2 });
-```
+## Data & cleanup
 
-```ts
-page.locator('.mantine-Modal-close');
-```
-
-## Data and cleanup
-
-Create programs with `uniqueName()` so the name includes `Date.now()`. Import `test` from `fixtures/cleanup.fixture.ts` and pass `trackProgram` into `createProgram`. The fixture deletes those programs through the API after the worker finishes. Do not add `afterAll` and do not delete through the UI.
-
-```ts
-await programs.createProgram(name, description, trackProgram);
-```
+Import `test` from `fixtures/cleanup.fixture.ts` and pass `trackProgram` into `createProgram`. The worker-scoped fixture deletes those programs once through the API; do not add `afterAll` or delete through the UI. Never delete data the test did not create; `uniqueName()` adds `Date.now()`, and bulk-delete may only target names with a 13-digit timestamp.

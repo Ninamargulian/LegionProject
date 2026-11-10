@@ -38,5 +38,12 @@ When a Jira ticket is given (`DS-1`, `DS-2`, and so on):
 
 - At most 3 delegations per task.
 - Never re-run an identical failing spec more than twice. Then stop and ask.
-- A human approves any merge and any filed bug.
 - Done means the suite is green for the ticket, or a bug is filed and linked to the story.
+
+## Guardrails
+
+- A human approves every merge and every filed bug.
+- No subagent edits application source.
+- test-writer: may create or edit only `tests/`, `pages/`, and `fixtures/`.
+- triage: read-only diagnosis; no edits, merges, or fixes.
+- bug-reporter: files a Jira bug only after a human confirms it; no repo file edits.

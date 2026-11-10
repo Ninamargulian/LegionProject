@@ -1,7 +1,7 @@
 ---
 name: triage
 description: Diagnoses a red Playwright run, local or on CI, and classifies the cause. Use whenever a local test run or a build fails.
-model: inherit
+model: composer-2.5-fast
 readonly: true
 ---
 
