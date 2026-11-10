@@ -1,5 +1,5 @@
 ---
-description: When generating or extending a Playwright spec that opens a page, screen, or fresh page, follow the a11y-checks skill and add an axe scan even if the user did not mention accessibility.
+description: When generating or extending a Playwright spec that opens a page, screen, or fresh page, follow the a11y-checks skill. Add a WCAG axe scan and, on the programs page, a keyboard check, even if the user did not mention accessibility.
 alwaysApply: false
 ---
 
@@ -8,6 +8,9 @@ alwaysApply: false
 When **writing** or **extending** a Playwright test that **opens a page**:
 
 1. Read and follow `.agents/skills/a11y-checks/SKILL.md` completely.
-2. Navigate through the page object. Use the stored session. Do not add a UI login.
-3. Scan with `new AxeBuilder({ page }).analyze()` and assert `results.violations` is empty.
-4. Do not call `disableRules()` to make the test pass. Record real violations for the bug reporter.
+2. Navigate through the existing page objects. Use the stored session. Do not add a UI login. No inline locators in the spec. Role-based locators stay on the page object.
+3. Scan with `new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()` and assert `expect(results.violations).toEqual([])`.
+4. Call `.include()` or `.exclude()` only when a third-party widget is noisy, and comment why. Do not scope the scan to hide an app violation.
+5. On the programs page, add the keyboard check axe cannot do: Tab to `newProgramButton`, assert `toBeFocused()`, press Enter, assert `newProgramModal.dialog` is visible.
+6. One tag per test: `@regression`.
+7. If the scan finds real violations, report rule id, impact, help text, and targets, then stop. Never call `disableRules()` to go green.

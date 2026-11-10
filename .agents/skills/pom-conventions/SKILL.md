@@ -28,25 +28,43 @@ Spec files stay `tests/didaxis/dsX-[ticket-title].spec.ts`.
 ## Locators
 
 Assign stable locators as `readonly` properties in the constructor. Use
-only `getByRole`, `getByLabel`, and `getByText`. No CSS, no XPath, no
-`page.locator()`.
+user-facing queries in this order:
+
+1. `getByRole`
+2. `getByLabel` or `getByPlaceholder`
+3. `getByText`
+4. `getByTestId` — escape hatch only, with a comment that says why role,
+   label, placeholder, and text cannot identify the element
+
+No CSS, no XPath, no `page.locator()`.
+
+When a query matches more than one element, narrow it with
+`.filter({ hasText })`. Do not use `.first()`.
 
 A locator that needs a value from the test (a program name) is a method
 on the page object, still built with those same queries:
 
 - `programRow(name)` — row that has `Edit ${name}`
 - `programTitle(name)` — exact text of that name inside the row
-- `programNameCell(name)` — first cell of that row
+- `programNameCell(name)` — the cell in that row filtered by the program
+  name (`.filter({ hasText: name })`, not `.first()`)
 - `editButton(name)` — button `Edit ${name}`
 
-The spec must not call `getByRole`, `getByLabel`, `getByText`, or
-`locator()`. It uses the page object's properties and methods.
+The spec must not call `getByRole`, `getByLabel`, `getByPlaceholder`,
+`getByText`, `getByTestId`, or `locator()`. It uses the page object's
+properties and methods.
 
 ## Actions
 
 Methods perform user actions: `goto`, `signIn`, `openNewProgramForm`,
 `fill`, `submit`, `cancel`, `createProgram`. No `expect()` inside a page
 object. Leave every assertion in the spec.
+
+No `waitForTimeout` in a page object or a spec. Readiness is a web-first
+assertion in the spec: `expect(locator).toBeVisible()`, `.toBeEnabled()`,
+or `.toHaveText()`. Do not write
+`expect(await locator.isVisible()).toBe(true)`. Replacing a locator or a
+wait does not change what the assertion checks.
 
 `LoginPage.signIn(email, password)` receives credentials as arguments.
 Read them from `DIDAXIS_EMAIL` and `DIDAXIS_PASSWORD` in the setup test.
@@ -77,3 +95,9 @@ test.beforeEach(async ({ page }) => {
 
 Auth setup signs in with `LoginPage`, clicks `ProgramsPage.programsNav`,
 waits for `**/programs`, then saves `playwright/.auth/user.json`.
+
+`page.route` for a programs API edge case stays in the spec. The spec
+still drives the screen through `ProgramsPage`, `NewProgramModal`, and
+`LoginPage`. Add an error or empty-state locator only after that copy
+has been read on the real page. Do not guess the string. See the
+Programs API edge cases section of `.cursor/rules/playwright-conventions.mdc`.

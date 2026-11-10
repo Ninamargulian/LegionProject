@@ -31,6 +31,10 @@ its UUID and delete it via the API afterwards.
    spec (`tests/manual/bulk-delete-programs.spec.ts`) may only target
    programs whose name contains a 13-digit timestamp (`/\d{13}/`),
    which `uniqueName()` adds via `Date.now()`.
+6. A programs UI edge-case test that fulfills `/api/programs` with
+   `page.route` and does not create a real program does not use
+   `trackProgram`. Do not mock `DELETE /api/programs/<uuid>`, and do
+   not mock any call whose real result that test asserts.
 
 ## Reference
 

@@ -8,7 +8,8 @@ alwaysApply: false
 When **writing**, **refactoring**, or **reviewing** Playwright UI tests or page objects for Didaxis:
 
 1. Read and follow `.agents/skills/pom-conventions/SKILL.md` completely.
-2. Keep locators in `pages/` as `readonly` constructor properties, using `getByRole`, `getByLabel`, or `getByText` only.
+2. Keep locators in `pages/` as `readonly` constructor properties. Follow the locator order and wait rules in the pom-conventions skill: `getByRole`, then `getByLabel` or `getByPlaceholder`, then `getByText`, then `getByTestId` only with a comment saying why. No CSS, no XPath, no `page.locator()`, no `waitForTimeout`, and no `.first()` when `.filter({ hasText })` can tell the elements apart. Assertions stay web-first (`toBeVisible`, `toBeEnabled`, `toHaveText`) and keep their meaning.
 3. Leave every `expect()` in the spec. Page object methods only perform actions.
 4. Specs stay named `dsX-[ticket-title].spec.ts` and must not contain inline locators.
 5. Tests that create a program still pass `trackProgram` into `createProgram` and follow the api-cleanup skill.
+6. Programs API edge cases keep `page.route` in the spec and user actions on the existing page objects. Assertion copy comes from the real page. One `@edge` tag per test. Follow the Programs API edge cases section of `.cursor/rules/playwright-conventions.mdc`.

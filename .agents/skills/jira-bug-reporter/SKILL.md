@@ -62,6 +62,8 @@ What the test (or AC) asserts should happen.
 ## Actual result
 What happened instead (assertion message, timeout, count mismatch).
 
+For an axe failure, list every violation: rule id, impact, help text, and target nodes. Do not describe `disableRules()` as a fix.
+
 ## Evidence
 - Screenshot: `<filename>` (attached)
 - Error context: `test-results/.../error-context.md` (summarize key lines)

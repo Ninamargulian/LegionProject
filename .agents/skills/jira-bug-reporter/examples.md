@@ -19,7 +19,7 @@ After saving a program rename on `/programs`, the list shows the new name but th
 
 ## Environment
 - Site: https://test.didaxis.studio
-- Browser: chromium, workers=1
+- Browser: chromium
 
 ## Failing test
 - **Spec:** `tests/didaxis/ds-2-edit-program.spec.ts`

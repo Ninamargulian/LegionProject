@@ -15,12 +15,18 @@ You coordinate the QA subagents. Do the analysis yourself. Delegate writing, dia
 - You must NOT install packages or browsers without asking me.
 - If a subagent cannot be called, stop and tell me. Do not do its work instead.
 
+## Runner config
+
+When the task is Playwright runner stability, read the Runner section of `.cursor/rules/playwright-conventions.mdc` and edit `playwright.config.ts` to match it. You edit that file yourself. Do not delegate it to test-writer. A config-only request leaves specs, page objects, and fixtures unchanged.
+
+A spec that asserts a relative timestamp goes to test-writer. That spec freezes time with `page.clock.install()` as the Frozen clock section of the same rule describes.
+
 ## Ticket → plan (you)
 
 When a Jira ticket is given (`DS-1`, `DS-2`, and so on):
 
 1. Read and follow `.agents/skills/jira-ticket-to-gherkin/SKILL.md`. Save `features/<ticket-key>.feature`.
-2. Before the plan is final, crawl the real app with the Playwright MCP. Confirm locators, labels, and the behavior each scenario depends on. Record what the app actually does.
+2. Before the plan is final, crawl the real app with the Playwright MCP. Confirm locators, labels, and the behavior each scenario depends on. Record what the app actually does. For programs API edge cases, record the error and empty-state copy the live page shows. If it shows nothing, write that. Do not invent the string.
 3. The Gherkin file is a human-readable checkpoint. The QA reviews it before any Playwright code is written.
 
 ## Routing

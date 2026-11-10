@@ -21,6 +21,7 @@ description: Diagnose a failed CI run. Use when the user says the build is red, 
 - Check that the numbers (expected/received, call log) match your explanation before classifying.
 - Do not trust "known failure" comments in the code as proof — verify against the trace and call log.
 - If a new value contains the old one (e.g. "X" → "X - Updated"), check whether the locator needs `exact: true`.
+- A relative timestamp or formatted date that differs across machines is a test issue when the spec did not call `page.clock.install()` before navigation, and a config gap when `locale` and `timezoneId` are not pinned. Do not invent those values. Do not recommend `workers: 1` or `retries` above 2. Local `retries` are 0. CI `retries` are 2. `trace` is `on-first-retry`. See the Runner and Frozen clock sections of `.cursor/rules/playwright-conventions.mdc`.
 
 ## Resolve the failed run
 
@@ -61,7 +62,9 @@ Copy and track:
 - [ ] Ticket key from `test.describe`, title, or `features/<KEY>.feature`
 - [ ] Didaxis app source in repo (if any) vs test-only repo
 - [ ] Env/secrets/credentials called out in log (not a product bug)
-- [ ] Classification: product defect | test issue | env/flake
+- [ ] Relative timestamp or formatted date: `page.clock.install()` ran before navigation; `locale` and `timezoneId` are pinned
+- [ ] Suggested fix does not set `workers: 1` or `retries` above 2
+- [ ] Classification: product defect | test issue | env/flake | time drift
 ```
 
 ## Classification
@@ -71,6 +74,7 @@ Copy and track:
 | **Product defect** | Follow [jira-bug-reporter](../jira-bug-reporter/SKILL.md). Include CI run id and artifact paths in the Bug description. |
 | **Test issue** | Draft a minimal patch (spec and/or POM). Do not merge; leave for review. |
 | **Env / credentials / flake** | Explain in the PR comment. Do not file a product Bug. |
+| **Time drift** (relative timestamp or formatted date) | Test issue when the spec did not freeze the clock, or a config gap when `locale` / `timezoneId` are unpinned. Point at the Runner and Frozen clock sections of `.cursor/rules/playwright-conventions.mdc`. Do not file a product Bug. Do not recommend `workers: 1` or `retries` above 2. |
 
 ## PR comment template
 

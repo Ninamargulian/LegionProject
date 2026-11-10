@@ -1,7 +1,8 @@
 ---
-description: how this project writes Playwright tests — auth, POM,
-  locators, data and cleanup
-globs: tests/**
+description: how this project writes Playwright tests and keeps playwright.config.ts
+  stable — auth, POM, locators, accessibility, data and cleanup, programs API
+  edge cases, runner settings, frozen clock
+globs: tests/**,playwright.config.ts
 alwaysApply: false
 ---
 
@@ -17,8 +18,78 @@ Specs act through classes in `pages/` (`LoginPage`, `ProgramsPage`, `NewProgramM
 
 ## Locators
 
-Use `getByRole`, `getByLabel`, or `getByText` only. No CSS, no XPath, and no `page.locator()`. A locator that needs a test value, such as a program name, is a method on the page object.
+User-facing queries, in this order: `getByRole`, then `getByLabel` or `getByPlaceholder`, then `getByText`, then `getByTestId`. `getByTestId` is an escape hatch only, and a comment must say why role, label, placeholder, and text cannot identify the element. No CSS, no XPath, and no `page.locator()`.
+
+When a query matches more than one element, narrow it with `.filter({ hasText })`. Do not use `.first()`.
+
+A locator that needs a test value, such as a program name, is a method on the page object.
+
+## Waits
+
+No `waitForTimeout`. Wait with a web-first assertion that retries: `expect(locator).toBeVisible()`, `.toBeEnabled()`, or `.toHaveText()`.
+
+`expect(await locator.isVisible()).toBe(true)` is a one-shot snapshot. Write `expect(locator).toBeVisible()` instead.
+
+Changing a locator or a wait leaves the assertion's meaning as it is.
+
+## Accessibility
+
+A spec that opens a screen follows `.agents/skills/a11y-checks/SKILL.md`. The programs page has two tests, each with exactly one tag, `@regression`.
+
+The axe scan is `new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze()`, asserted with `expect(results.violations).toEqual([])`. Call `.include()` or `.exclude()` only when a third-party widget is noisy, and comment why.
+
+The keyboard test tabs to the primary control, asserts `toBeFocused()`, presses Enter, and asserts the dialog is visible. On Programs that control is `ProgramsPage.newProgramButton` and the dialog is `newProgramModal.dialog`. Both are existing `getByRole` locators. The spec does not repeat them inline.
+
+If `violations` is not empty, report rule id, impact, help text, and targets, then stop. Never call `disableRules()` to go green.
+
+## Programs API edge cases
+
+Deterministic UI edge cases for the programs flow use `page.route` and fulfill `/api/programs`. Mock only the response whose effect on the UI is under test. Never mock the endpoint that test verifies. Real create, list, edit, delete, duplicate-name validation, `tests/api.spec.ts`, and cleanup `DELETE /api/programs/<uuid>` stay on the network.
+
+One test per case. Assert the UI, not the status just fulfilled. Save means `POST /api/programs` for create and `PUT` or `PATCH /api/programs/*` for edit. List means `GET /api/programs`.
+
+- 503 on save → the UI's error state
+- 200 and `[]` on list → the empty-state message
+- 200 with a malformed payload (`{`, `null`, or `{ "programs": null }`) on the call the screen reads → the app does not crash
+- 400, 408, 422, and 429 on save → the UI's error state
+- 409 on save → the UI's conflict state. This is not the real duplicate-name test
+- 401 and 403 on the call the screen makes → the UI's auth or forbidden state
+- 404 on list → the UI's missing-list state
+- 500, 501, 502, and 504 on the call the screen makes → the UI's error state
+- 300 on that call, and 204 or `{}` on list → no crash, or the empty state, whichever the UI actually does
+
+Before writing an assertion, open the real Programs page with the Playwright MCP and read the error and empty-state copy the app renders. Do not invent strings. If a case renders nothing, say so.
+
+`page.route` stays in the spec. Clicks, fills, and navigation go through `ProgramsPage`, `NewProgramModal`, and `LoginPage`. Each test has exactly one tag, `@edge`.
 
 ## Data & cleanup
 
 Import `test` from `fixtures/cleanup.fixture.ts` and pass `trackProgram` into `createProgram`. The worker-scoped fixture deletes those programs once through the API; do not add `afterAll` or delete through the UI. Never delete data the test did not create; `uniqueName()` adds `Date.now()`, and bulk-delete may only target names with a 13-digit timestamp.
+
+## Runner
+
+The orchestrator edits `playwright.config.ts` to match this section. test-writer does not edit that file. Leave `testIgnore`, `forbidOnly`, the dotenv load, and the reporter as they are.
+
+- `fullyParallel: true`
+- `retries: process.env.CI ? 2 : 0`. Local runs fail on the first error. CI retries twice so one transient blip can still pass. Never set `retries` above 2.
+- Do not set `workers`. Remove `workers: process.env.CI ? 1 : undefined` if it is present. Do not set `workers: 1`.
+- `use.baseURL` is `process.env.DIDAXIS_URL`. Do not hardcode the site URL.
+- `use.trace` is `'on-first-retry'`.
+- `use.locale` is `'en-CA'` and `use.timezoneId` is `'America/Toronto'`, so date formatting cannot drift between a developer machine and CI.
+- Keep the `setup` project (`testMatch: /.*\.setup\.ts/`) and the `chromium` project that depends on `setup` and sets `storageState: 'playwright/.auth/user.json'`.
+
+## Frozen clock
+
+A spec that asserts a relative timestamp (`just now`, `5 minutes ago`, and similar) freezes time with `page.clock.install()` before `goto()`. The expected text is the relative phrase the live UI renders at that frozen instant. The locator is a page-object method. The assertion stays in the spec. Program creation still uses `createProgram` and `trackProgram`.
+
+```typescript
+test('program row shows a relative timestamp from a frozen clock', async ({ page }) => {
+  await page.clock.install({ time: new Date('2026-03-15T12:00:00.000Z') });
+
+  const programs = new ProgramsPage(page);
+  await programs.goto();
+  await programs.createProgram(name, description, trackProgram);
+
+  await expect(programs.programRow(name)).toContainText('just now');
+});
+```
